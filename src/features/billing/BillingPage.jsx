@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react'
-import { useProfile }         from '../../hooks/useProfile'
-import { useCredits }         from '../../hooks/useCredits'
-import { useAuth }            from '../../context/AuthContext'
-import { useToast }           from '../../components/ui/Toast'
-import { fetchCreditHistory }  from '../../lib/supabase/posts'
-import { supabase }            from '../../lib/supabase/client'
+import { useProfile } from '../../context/ProfileContext'
+import { useCredits } from '../../context/CreditsContext'
+import { useAuth }    from '../../context/AuthContext'
+import { useToast }   from '../../components/ui/Toast'
+import { fetchCreditHistory } from '../../lib/supabase/posts'
+import { supabase }           from '../../lib/supabase/client'
 import Spinner  from '../../components/ui/Spinner'
 import { Zap, CheckCircle2, CreditCard, ArrowUpRight } from 'lucide-react'
 import { format } from 'date-fns'
@@ -21,7 +21,6 @@ const PLANS = [
     credits: 100, period: 'month',
     features: ['100 credits/month', 'All platforms', 'Priority generation', 'Advanced scheduling', 'Email support'],
     cta: 'Upgrade to Starter',
-    highlight: false,
   },
   {
     id: 'pro', label: 'Pro', price: 15000, currency: '₦',
@@ -38,7 +37,7 @@ const TOPUP_PACKS = [
   { credits: 120, price: 4000, label: 'Power Pack' },
 ]
 
-// ─── Add credits via secure RPC (bypasses RLS safely) ─────────
+// ─── Secure RPC: add credits only ────────────────────────────
 async function addCreditsViaRPC(userId, creditsToAdd, description) {
   const { data: newBalance, error } = await supabase.rpc('add_credits', {
     p_user_id:     userId,
@@ -47,6 +46,18 @@ async function addCreditsViaRPC(userId, creditsToAdd, description) {
   })
   if (error) throw error
   return newBalance
+}
+
+// ─── Secure RPC: upgrade plan + credits atomically ───────────
+async function upgradePlanViaRPC(userId, plan, credits) {
+  const { error } = await supabase.rpc('upgrade_plan', {
+    p_user_id: userId,
+    p_plan:    plan,
+    p_credits: credits,
+  })
+  if (error) throw error
+  const { data } = await supabase.from('profiles').select('credits').eq('id', userId).single()
+  return data?.credits ?? null
 }
 
 // ─── Paystack helper ──────────────────────────────────────────
@@ -68,7 +79,7 @@ function initPaystack({ email, amount, metadata, onSuccess, onClose }) {
 }
 
 // ─── Plan Card ────────────────────────────────────────────────
-function PlanCard({ plan, currentPlan, userId, userEmail, onUpgraded }) {
+function PlanCard({ plan, currentPlan, userId, userEmail, setCredits, onUpgraded }) {
   const [loading, setLoading] = useState(false)
   const { add: toast }        = useToast()
   const isCurrent   = plan.id === currentPlan
@@ -83,8 +94,9 @@ function PlanCard({ plan, currentPlan, userId, userEmail, onUpgraded }) {
       metadata: { plan: plan.id, credits: plan.credits },
       onSuccess: async () => {
         try {
-          await addCreditsViaRPC(userId, plan.credits, `Plan upgrade to ${plan.label}`)
-          await supabase.from('profiles').update({ plan: plan.id, subscription_status: 'active' }).eq('id', userId)
+          const newBalance = await upgradePlanViaRPC(userId, plan.id, plan.credits)
+          // ✅ Instantly update sidebar credit count
+          setCredits(newBalance)
           toast(`🎉 Upgraded to ${plan.label}! ${plan.credits} credits added.`, 'success')
           onUpgraded?.()
         } catch (err) {
@@ -140,7 +152,7 @@ function PlanCard({ plan, currentPlan, userId, userEmail, onUpgraded }) {
 }
 
 // ─── Top-up Section ───────────────────────────────────────────
-function TopUpSection({ userId, userEmail, onPurchased }) {
+function TopUpSection({ userId, userEmail, setCredits, onPurchased }) {
   const [loading, setLoading] = useState(null)
   const { add: toast }        = useToast()
 
@@ -153,6 +165,8 @@ function TopUpSection({ userId, userEmail, onPurchased }) {
       onSuccess: async () => {
         try {
           const newBalance = await addCreditsViaRPC(userId, pack.credits, `Credit top-up (${pack.credits} credits)`)
+          // ✅ Instantly update sidebar — no waiting for DB refetch
+          setCredits(newBalance)
           toast(`✅ ${pack.credits} credits added! New balance: ${newBalance}`, 'success')
           onPurchased?.()
         } catch (err) {
@@ -243,15 +257,15 @@ function CreditHistory() {
 
 // ─── Page ─────────────────────────────────────────────────────
 export default function BillingPage() {
-  const { user }             = useAuth()
+  const { user }                               = useAuth()
   const { profile, loading, refresh: refreshProfile } = useProfile()
-  const { credits, refresh } = useCredits()
-  const [historyKey, setHistoryKey] = useState(0)
+  const { credits, setCredits, refresh }       = useCredits()
+  const [historyKey, setHistoryKey]            = useState(0)
 
   const handlePurchased = () => {
-    refresh()
     refreshProfile()
     setHistoryKey(k => k + 1)
+    // Note: credits already updated instantly via setCredits in sub-components
   }
 
   if (loading) return <div className="flex items-center justify-center h-64"><Spinner /></div>
@@ -278,7 +292,9 @@ export default function BillingPage() {
           {PLANS.map(plan => (
             <PlanCard key={plan.id} plan={plan}
               currentPlan={profile?.plan ?? 'free'}
-              userId={user?.id} userEmail={user?.email ?? ''}
+              userId={user?.id}
+              userEmail={user?.email ?? ''}
+              setCredits={setCredits}
               onUpgraded={handlePurchased} />
           ))}
         </div>
@@ -286,7 +302,11 @@ export default function BillingPage() {
 
       <section className="space-y-4">
         <h3 className="text-sm font-semibold text-white/60 uppercase tracking-wider">One-Time Top-Up</h3>
-        <TopUpSection userId={user?.id} userEmail={user?.email ?? ''} onPurchased={handlePurchased} />
+        <TopUpSection
+          userId={user?.id}
+          userEmail={user?.email ?? ''}
+          setCredits={setCredits}
+          onPurchased={handlePurchased} />
       </section>
 
       <section className="space-y-4">
