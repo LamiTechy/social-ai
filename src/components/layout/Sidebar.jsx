@@ -1,10 +1,9 @@
 import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth }    from '../../context/AuthContext'
-import { useCredits } from '../../context/CreditsContext'
 import { useProfile } from '../../context/ProfileContext'
 import {
   LayoutDashboard, Sparkles, BookOpen,
-  Link2, CreditCard, LogOut, Zap, X, Crown
+  Link2, LogOut, Crown, X
 } from 'lucide-react'
 
 const NAV = [
@@ -12,7 +11,6 @@ const NAV = [
   { to: '/generate', icon: Sparkles,        label: 'Generate'  },
   { to: '/library',  icon: BookOpen,        label: 'Library'   },
   { to: '/accounts', icon: Link2,           label: 'Accounts'  },
-  { to: '/billing',  icon: CreditCard,      label: 'Billing'   },
 ]
 
 const PLAN_BADGE = {
@@ -23,7 +21,6 @@ const PLAN_BADGE = {
 
 export default function Sidebar({ open, onClose }) {
   const { user, signOut } = useAuth()
-  const { credits }       = useCredits()
   const { profile }       = useProfile()
   const navigate          = useNavigate()
 
@@ -73,29 +70,6 @@ export default function Sidebar({ open, onClose }) {
           </NavLink>
         ))}
       </nav>
-
-      {/* Credits pill */}
-      <div className="px-3 py-3">
-        <div onClick={() => { navigate('/billing'); onClose() }}
-          className={`
-            flex items-center gap-3 px-3 py-3 rounded-xl cursor-pointer border transition-all duration-150
-            ${credits !== null && credits <= 3
-              ? 'bg-amber-500/10 border-amber-500/25 hover:bg-amber-500/15'
-              : 'bg-white/[0.04] border-white/[0.08] hover:bg-white/[0.07]'
-            }
-          `}>
-          <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0
-            ${credits !== null && credits <= 3 ? 'bg-amber-500/20' : 'bg-violet-500/20'}`}>
-            <Zap className={`w-3.5 h-3.5 ${credits !== null && credits <= 3 ? 'text-amber-400' : 'text-violet-400'}`} />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-xs font-semibold text-white/80">{credits ?? '—'} credits left</p>
-            <p className="text-[10px] text-white/35 truncate">
-              {credits !== null && credits <= 3 ? 'Running low — top up' : 'Click to manage'}
-            </p>
-          </div>
-        </div>
-      </div>
 
       {/* User + plan + sign out */}
       <div className="px-3 py-3 border-t border-white/[0.07]">

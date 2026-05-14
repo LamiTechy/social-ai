@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom'
 import { useProfile } from '../../hooks/useProfile'
 import { usePosts }   from '../../hooks/usePosts'
 import { useAuth }    from '../../context/AuthContext'
-import { Sparkles, Zap, FileText, Calendar, TrendingUp, ArrowRight, Clock } from 'lucide-react'
+import { Sparkles, Zap, FileText, Calendar, TrendingUp, ArrowRight, Clock, Twitter, Linkedin, Instagram } from 'lucide-react'
 import { format, startOfWeek, addDays, isSameDay, parseISO } from 'date-fns'
 import Badge    from '../../components/ui/Badge'
 import Spinner  from '../../components/ui/Spinner'
@@ -77,12 +77,15 @@ function WeekCalendar({ posts }) {
 function PostRow({ post }) {
   const platform = Object.keys(post.content ?? {})[0] ?? 'twitter'
   const text = post.content?.[platform] ?? ''
-  const ICONS = { twitter: '𝕏', linkedin: 'in', instagram: '📸' }
+  const ICONS = { twitter: Twitter, linkedin: Linkedin, instagram: Instagram }
 
   return (
     <div className="flex items-start gap-2 sm:gap-3 py-2 sm:py-3 border-b border-white/[0.06] last:border-0 min-w-0 overflow-hidden">
       <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-white/[0.06] flex items-center justify-center shrink-0 text-xs sm:text-sm mt-0.5">
-        {ICONS[platform] ?? '📝'}
+        {(() => {
+          const Icon = ICONS[platform] ?? BookOpen
+          return <Icon className="w-4 h-4 text-white/60" />
+        })()}
       </div>
       <div className="flex-1 min-w-0 overflow-hidden">
         <p className="text-xs text-white/70 truncate leading-relaxed">{text}</p>
@@ -126,28 +129,13 @@ export default function DashboardPage() {
       </div>
 
       {/* Stats row */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
-        <StatCard icon={Zap}         label="Credits left"     value={profile?.credits ?? 0}       sub="Free plan"              accent="violet" />
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-4">
         <StatCard icon={FileText}    label="Posts created"    value={posts.length}                 sub="All time"               accent="blue"   />
         <StatCard icon={Calendar}    label="Scheduled"        value={scheduled}                    sub="Upcoming posts"         accent="emerald"/>
-        <StatCard icon={TrendingUp}  label="Credits used"     value={profile?.credits_used ?? 0}   sub="Total generations"      accent="amber"  />
+        <StatCard icon={TrendingUp}  label="Total generated"  value={posts.length}                 sub="Using AI"               accent="amber"  />
       </div>
 
       {/* Low credit banner */}
-      {profile?.credits !== null && profile?.credits <= 3 && (
-        <div className="rounded-2xl bg-amber-500/10 border border-amber-500/25 p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
-          <div className="flex items-start sm:items-center gap-3">
-            <Zap className="w-5 h-5 text-amber-400 shrink-0 mt-0.5 sm:mt-0" />
-            <div>
-              <p className="text-sm font-semibold text-amber-300">Running low on credits</p>
-              <p className="text-xs text-amber-400/60">You have {profile.credits} credit{profile.credits !== 1 ? 's' : ''} remaining.</p>
-            </div>
-          </div>
-          <button onClick={() => navigate('/billing')} className="btn-ghost text-xs shrink-0">
-            Top up <ArrowRight className="w-3 h-3" />
-          </button>
-        </div>
-      )}
 
       {/* Two-column lower section */}
       <div className="grid lg:grid-cols-2 gap-4 sm:gap-6">
@@ -183,7 +171,7 @@ export default function DashboardPage() {
         {[
           { label: 'Write a post',    desc: 'AI-powered content for any platform', icon: Sparkles, to: '/generate', color: 'from-violet-600/20' },
           { label: 'Browse library',  desc: 'Manage and schedule saved drafts',    icon: FileText,  to: '/library',  color: 'from-blue-600/20'   },
-          { label: 'Upgrade plan',    desc: 'Get more credits and features',       icon: Zap,       to: '/billing',  color: 'from-amber-600/20'  },
+          { label: 'Link accounts',   desc: 'Connect your social profiles',       icon: Zap,       to: '/accounts', color: 'from-amber-600/20'  },
         ].map(item => (
           <button
             key={item.to}

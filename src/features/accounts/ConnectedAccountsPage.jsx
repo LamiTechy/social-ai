@@ -1,29 +1,28 @@
 import { useEffect, useState } from 'react'
 import { useAuth }   from '../../context/AuthContext'
 import { useToast }  from '../../components/ui/Toast'
-import { fetchConnectedAccounts, disconnectAccount } from '../../lib/supabase/posts'
+import { fetchConnectedAccounts, disconnectAccount, fetchUserPosts } from '../../lib/supabase/posts'
 import Spinner    from '../../components/ui/Spinner'
-import EmptyState from '../../components/ui/EmptyState'
-import { Link2, Link2Off, CheckCircle2, Clock, Loader2 } from 'lucide-react'
+import { Link2, Link2Off, CheckCircle2, Clock, Loader2, TrendingUp, Twitter, Linkedin, Instagram, Facebook } from 'lucide-react'
 
 const PLATFORMS = [
   {
-    id: 'twitter', label: 'Twitter / X', icon: '𝕏',
+    id: 'twitter', label: 'Twitter / X', icon: Twitter,
     desc: 'Post tweets and threads directly from SocialAI.',
     color: 'sky',
   },
   {
-    id: 'linkedin', label: 'LinkedIn', icon: 'in',
+    id: 'linkedin', label: 'LinkedIn', icon: Linkedin,
     desc: 'Share professional updates to your LinkedIn profile.',
     color: 'blue',
   },
   {
-    id: 'instagram', label: 'Instagram', icon: '📸',
+    id: 'instagram', label: 'Instagram', icon: Instagram,
     desc: 'Schedule Instagram posts and captions.',
     color: 'pink',
   },
   {
-    id: 'facebook', label: 'Facebook', icon: '📘',
+    id: 'facebook', label: 'Facebook', icon: Facebook,
     desc: 'Publish to your Facebook page or profile.',
     color: 'blue',
   },
@@ -35,7 +34,7 @@ const COLOR_MAP = {
   pink: { bg: 'bg-pink-500/10', border: 'border-pink-500/25', text: 'text-pink-400' },
 }
 
-function PlatformCard({ platform, account, onDisconnect }) {
+function PlatformCard({ platform, account, onDisconnect, postCount }) {
   const [disconnecting, setDisconnecting] = useState(false)
   const { add: toast } = useToast()
   const c = COLOR_MAP[platform.color] ?? COLOR_MAP.blue
@@ -51,17 +50,17 @@ function PlatformCard({ platform, account, onDisconnect }) {
 
   // In production this would redirect to OAuth flow
   const handleConnect = () => {
-    toast('OAuth flow coming soon — wire up your platform credentials in .env', 'info')
+    toast('Platform connection is not implemented yet.', 'info')
   }
 
   return (
     <div className={`card p-5 flex flex-col gap-4 ${connected ? `border ${c.border} ${c.bg}` : ''}`}>
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-xl ${connected ? c.bg : 'bg-white/[0.05]'} border ${connected ? c.border : 'border-white/10'}`}>
-            {platform.icon}
+          <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${connected ? c.bg : 'bg-white/[0.05]'} border ${connected ? c.border : 'border-white/10'}`}>
+            <platform.icon className={`w-5 h-5 ${connected ? c.text : 'text-white/60'}`} />
           </div>
-          <div>
+          <div className="flex-1">
             <p className="text-sm font-semibold text-white/90">{platform.label}</p>
             {connected && account.platform_username && (
               <p className={`text-xs font-medium ${c.text}`}>@{account.platform_username}</p>
@@ -69,16 +68,23 @@ function PlatformCard({ platform, account, onDisconnect }) {
           </div>
         </div>
         {connected
-          ? <span className="flex items-center gap-1.5 text-[11px] text-emerald-400 font-semibold bg-emerald-500/10 border border-emerald-500/20 px-2 py-1 rounded-full">
+          ? <span className="flex items-center gap-1.5 text-[11px] text-emerald-400 font-semibold bg-emerald-500/10 border border-emerald-500/20 px-2 py-1 rounded-full whitespace-nowrap">
               <CheckCircle2 className="w-3 h-3" /> Connected
             </span>
-          : <span className="flex items-center gap-1.5 text-[11px] text-white/30 font-medium bg-white/[0.04] border border-white/10 px-2 py-1 rounded-full">
+          : <span className="flex items-center gap-1.5 text-[11px] text-white/30 font-medium bg-white/[0.04] border border-white/10 px-2 py-1 rounded-full whitespace-nowrap">
               <Clock className="w-3 h-3" /> Not connected
             </span>
         }
       </div>
 
       <p className="text-xs text-white/40 leading-relaxed">{platform.desc}</p>
+
+      {connected && (
+        <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-white/[0.03] border border-white/10">
+          <TrendingUp className="w-3.5 h-3.5 text-white/30" />
+          <span className="text-xs text-white/60">{postCount} post{postCount !== 1 ? 's' : ''} published</span>
+        </div>
+      )}
 
       {connected ? (
         <button onClick={handleDisconnect} disabled={disconnecting} className="btn-ghost text-xs self-start">
@@ -97,12 +103,19 @@ function PlatformCard({ platform, account, onDisconnect }) {
 export default function ConnectedAccountsPage() {
   const { user }                = useAuth()
   const [accounts, setAccounts] = useState([])
+  const [posts, setPosts]       = useState([])
   const [loading, setLoading]   = useState(true)
   const { add: toast }          = useToast()
 
   useEffect(() => {
-    fetchConnectedAccounts(user.id)
-      .then(({ data }) => setAccounts(data ?? []))
+    Promise.all([
+      fetchConnectedAccounts(user.id),
+      fetchUserPosts({ status: 'published', limit: 1000 })
+    ])
+      .then(([{ data: accts }, { data: postList }]) => {
+        setAccounts(accts ?? [])
+        setPosts(postList ?? [])
+      })
       .finally(() => setLoading(false))
   }, [user.id])
 
@@ -110,6 +123,10 @@ export default function ConnectedAccountsPage() {
     const { error } = await disconnectAccount(accountId)
     if (!error) setAccounts(a => a.filter(x => x.id !== accountId))
     return { error }
+  }
+
+  const getPostCount = (platformId) => {
+    return posts.filter(p => p.platforms?.includes(platformId)).length
   }
 
   return (
@@ -129,17 +146,11 @@ export default function ConnectedAccountsPage() {
               platform={platform}
               account={accounts.find(a => a.platform === platform.id) ?? null}
               onDisconnect={handleDisconnect}
+              postCount={getPostCount(platform.id)}
             />
           ))}
         </div>
       )}
-
-      <div className="card p-5 bg-blue-500/[0.04] border-blue-500/20">
-        <p className="text-xs font-semibold text-blue-300 mb-1">OAuth Setup Required</p>
-        <p className="text-xs text-white/40 leading-relaxed">
-          To enable real OAuth connections, create apps on each platform's developer portal and add your client IDs/secrets to your Supabase Edge Function environment variables. See the <code className="text-violet-400">SETUP.md</code> for a step-by-step guide.
-        </p>
-      </div>
     </div>
   )
 }

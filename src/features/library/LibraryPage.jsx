@@ -9,11 +9,16 @@ import EmptyState     from '../../components/ui/EmptyState'
 import { schedulePost } from '../../lib/supabase/posts'
 import {
   BookOpen, Sparkles, Trash2, CalendarPlus,
-  Copy, Check, Filter, Clock, Loader2
+  Copy, Check, Filter, Clock, Loader2,
+  Twitter, Linkedin, Instagram
 } from 'lucide-react'
 import { format } from 'date-fns'
 
-const PLATFORM_ICONS = { twitter: '𝕏', linkedin: 'in', instagram: '📸' }
+const PLATFORM_ICONS = {
+  twitter: Twitter,
+  linkedin: Linkedin,
+  instagram: Instagram,
+}
 const FILTERS = [
   { value: '',          label: 'All'       },
   { value: 'draft',     label: 'Drafts'    },
@@ -60,9 +65,12 @@ function PostCard({ post, onArchive, onScheduled }) {
         {/* Header */}
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-2 flex-wrap">
-            {platforms.map(p => (
-              <span key={p} className="text-sm">{PLATFORM_ICONS[p] ?? '📝'}</span>
-            ))}
+            {platforms.map(p => {
+              const Icon = PLATFORM_ICONS[p] ?? BookOpen
+              return (
+                <Icon key={p} className="w-4 h-4 text-white/60" />
+              )
+            })}
             <Badge label={post.status} variant={post.status} />
           </div>
           <div className="flex items-center gap-1 shrink-0">

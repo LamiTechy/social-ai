@@ -3,23 +3,13 @@ import { supabase } from './client'
 // ─── Posts ───────────────────────────────────────────────────────────────────
 
 export async function insertGeneratedPost({ userId, topic, tone, platforms, content, imagePrompt = null }) {
-  const { data: post, error: insertError } = await supabase
+  const { data: post, error } = await supabase
     .from('generated_posts')
-    .insert({ user_id: userId, topic, tone, platforms, content, image_prompt: imagePrompt, credits_charged: 1 })
+    .insert({ user_id: userId, topic, tone, platforms, content, image_prompt: imagePrompt })
     .select()
     .single()
 
-  if (insertError) return { data: null, error: insertError }
-
-  const { error: creditError } = await supabase
-    .rpc('deduct_credit', { p_user_id: userId, p_post_id: post.id, p_amount: 1 })
-
-  if (creditError) {
-    await supabase.from('generated_posts').delete().eq('id', post.id)
-    return { data: null, error: creditError }
-  }
-
-  return { data: post, error: null }
+  return { data: post, error }
 }
 
 export async function fetchUserPosts({ status, limit = 20, offset = 0 } = {}) {
@@ -78,7 +68,7 @@ export async function updatePostContent(postId, content) {
 export async function fetchProfile(userId) {
   const { data, error } = await supabase
     .from('profiles')
-    .select('id, email, full_name, business_name, credits, credits_used, plan, subscription_status')
+    .select('id, email, full_name, business_name, plan, subscription_status')
     .eq('id', userId)
     .single()
   return { data, error }
@@ -92,17 +82,6 @@ export async function updateProfile(userId, updates) {
     .select()
     .single()
   return { data, error }
-}
-
-// ─── Credits ─────────────────────────────────────────────────────────────────
-
-export async function fetchCreditHistory(limit = 20) {
-  const { data, error } = await supabase
-    .from('credit_transactions')
-    .select('*')
-    .order('created_at', { ascending: false })
-    .limit(limit)
-  return { data: data ?? [], error }
 }
 
 // ─── Connected Accounts ──────────────────────────────────────────────────────

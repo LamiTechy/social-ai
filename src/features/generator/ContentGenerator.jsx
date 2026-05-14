@@ -1,34 +1,37 @@
 import { useState, useCallback } from 'react'
 import { useAuth }     from '../../context/AuthContext'
-import { useCredits }  from '../../hooks/useCredits'
 import { useToast }    from '../../components/ui/Toast'
 import { generateContent }    from '../../lib/ai/generateContent'
 import { insertGeneratedPost } from '../../lib/supabase/posts'
 import { schedulePost }        from '../../lib/supabase/posts'
 import {
   Sparkles, Loader2, AlertCircle, CheckCircle2,
-  Copy, Check, CalendarPlus, RotateCcw, Zap
+  Copy, Check, CalendarPlus, RotateCcw,
+  Briefcase, Dice1, Zap, Star, BookOpen,
+  Music2, Twitter, Linkedin, Instagram
 } from 'lucide-react'
 
-// ─── Constants ───────────────────────────────────────────────
+// ─── Constants ─────────────────────────────────────────────
 const TONES = [
-  { id: 'professional',  label: 'Professional',  emoji: '👔', desc: 'Polished & authoritative' },
-  { id: 'quirky',        label: 'Quirky',         emoji: '🎲', desc: 'Fun & unexpected'        },
-  { id: 'direct',        label: 'Direct',         emoji: '⚡', desc: 'Short & punchy'          },
-  { id: 'inspirational', label: 'Inspirational',  emoji: '🌟', desc: 'Motivating & uplifting'  },
-  { id: 'educational',   label: 'Educational',    emoji: '📚', desc: 'Informative & clear'     },
+  { id: 'professional',  label: 'Professional',  icon: Briefcase, desc: 'Polished & authoritative' },
+  { id: 'quirky',        label: 'Quirky',         icon: Dice1,     desc: 'Fun & unexpected'        },
+  { id: 'direct',        label: 'Direct',         icon: Zap,       desc: 'Short & punchy'          },
+  { id: 'inspirational', label: 'Inspirational',  icon: Star,      desc: 'Motivating & uplifting'  },
+  { id: 'educational',   label: 'Educational',    icon: BookOpen,  desc: 'Informative & clear'     },
 ]
 
 const PLATFORMS = [
-  { id: 'twitter',   label: 'Twitter / X', charLimit: 280,  icon: '𝕏'  },
-  { id: 'linkedin',  label: 'LinkedIn',    charLimit: 3000, icon: 'in' },
-  { id: 'instagram', label: 'Instagram',   charLimit: 2200, icon: '📸' },
+  { id: 'twitter',   label: 'Twitter / X', charLimit: 280,  icon: Twitter   },
+  { id: 'linkedin',  label: 'LinkedIn',    charLimit: 3000, icon: Linkedin  },
+  { id: 'instagram', label: 'Instagram',   charLimit: 2200, icon: Instagram },
+  { id: 'tiktok',    label: 'TikTok',      charLimit: 2200, icon: Music2    },
 ]
 
 const PLATFORM_STYLE = {
   twitter:   { border: 'border-sky-500/30',  bg: 'bg-sky-500/10',  text: 'text-sky-300'  },
   linkedin:  { border: 'border-blue-500/30', bg: 'bg-blue-500/10', text: 'text-blue-300' },
   instagram: { border: 'border-pink-500/30', bg: 'bg-pink-500/10', text: 'text-pink-300' },
+  tiktok:    { border: 'border-fuchsia-500/30', bg: 'bg-fuchsia-500/10', text: 'text-fuchsia-300' },
 }
 
 // ─── Generated Card ──────────────────────────────────────────
@@ -65,7 +68,7 @@ function GeneratedCard({ platform, content, postId }) {
       {/* Header */}
       <div className="flex items-center justify-between px-5 py-3.5 border-b border-white/[0.07]">
         <div className="flex items-center gap-2.5">
-          <span className="text-base">{platform.icon}</span>
+          <platform.icon className="w-5 h-5 text-white/80" />
           <span className={`text-sm font-semibold ${style.text}`}>{platform.label}</span>
         </div>
         <div className="flex items-center gap-2">
@@ -117,7 +120,6 @@ function GeneratedCard({ platform, content, postId }) {
 // ─── Main Page ───────────────────────────────────────────────
 export default function ContentGenerator() {
   const { user }                   = useAuth()
-  const { credits, refresh }       = useCredits()
   const { add: toast }             = useToast()
 
   const [form, setForm]   = useState({ topic: '', tone: 'professional', platforms: ['twitter'] })
@@ -136,10 +138,6 @@ export default function ContentGenerator() {
 
   const handleGenerate = async () => {
     if (!form.topic.trim()) return
-    if (credits !== null && credits < 1) {
-      setStatus('error'); setErrorMsg('No credits remaining. Please top up to continue.')
-      return
-    }
     setStatus('loading'); setErrorMsg(''); setResult(null); setSavedPostId(null)
 
     try {
@@ -152,7 +150,6 @@ export default function ContentGenerator() {
       })
       if (error) throw error
       setSavedPostId(post.id)
-      await refresh()
       setStatus('success')
       toast(`${form.platforms.length} post${form.platforms.length > 1 ? 's' : ''} generated!`, 'success')
     } catch (err) {
@@ -175,15 +172,12 @@ export default function ContentGenerator() {
 
       {/* Form card */}
       <div className="card overflow-hidden">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.07]">
+        <div className="px-5 py-4 border-b border-white/[0.07]">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-violet-500/20 flex items-center justify-center">
               <Sparkles className="w-4 h-4 text-violet-400" />
             </div>
             <span className="text-sm font-semibold text-white/80">New Generation</span>
-          </div>
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-violet-500/10 border border-violet-500/20 text-xs text-violet-400">
-            <Zap className="w-3 h-3" /> {credits ?? '—'} credits
           </div>
         </div>
 
@@ -218,7 +212,7 @@ export default function ContentGenerator() {
                       : 'bg-white/[0.03] border-white/10 text-white/50 hover:border-white/20 hover:text-white/75'
                     }
                   `}>
-                  <span className="text-lg leading-none">{t.emoji}</span>
+                  <t.icon className="w-5 h-5" />
                   <span className="text-xs font-semibold">{t.label}</span>
                   <span className="text-[10px] text-white/35 leading-tight hidden sm:block">{t.desc}</span>
                   {form.tone === t.id && <span className="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-violet-400" />}
@@ -241,7 +235,7 @@ export default function ContentGenerator() {
                       transition-all duration-150 disabled:opacity-50
                       ${active ? `${st.bg} ${st.border} ${st.text}` : 'bg-white/[0.03] border-white/10 text-white/50 hover:border-white/20 hover:text-white/75'}
                     `}>
-                    <span className="text-base">{p.icon}</span>
+                    <p.icon className="w-4 h-4" />
                     {p.label}
                     {active && <span className="w-1.5 h-1.5 rounded-full bg-current" />}
                   </button>

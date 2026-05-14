@@ -17,6 +17,8 @@ const PLATFORM_INSTRUCTIONS: Record<string, string> = {
     'Write a professional LinkedIn post (150-300 words). Use short paragraphs and line breaks. End with a question or CTA. Use 3-5 hashtags at the end.',
   instagram:
     'Write an engaging Instagram caption. Use emojis naturally throughout. End with a clear CTA (DM, link in bio, tag a friend). Use 5-8 relevant hashtags at the end.',
+  tiktok:
+    'Write a TikTok caption up to 2200 characters. Keep it conversational, hook quickly, and include relevant hashtags with a strong CTA.',
 }
 
 const TONE_GUIDE: Record<string, string> = {

@@ -1,12 +1,11 @@
 import { useLocation } from 'react-router-dom'
-import { Menu, Bell } from 'lucide-react'
+import { Menu } from 'lucide-react'
 
 const PAGE_TITLES = {
   '/':          { title: 'Dashboard',       subtitle: 'Welcome back 👋' },
   '/generate':  { title: 'AI Generator',    subtitle: 'Create platform-ready content in seconds' },
   '/library':   { title: 'Content Library', subtitle: 'Manage and schedule your saved posts' },
   '/accounts':  { title: 'Connected Accounts', subtitle: 'Link your social media profiles' },
-  '/billing':   { title: 'Billing & Credits',  subtitle: 'Manage your plan and credit balance' },
 }
 
 export default function TopBar({ onMenuClick }) {
@@ -29,13 +28,6 @@ export default function TopBar({ onMenuClick }) {
         <p className="text-xs text-white/40 hidden sm:block">{page.subtitle}</p>
       </div>
 
-      {/* Actions */}
-      <div className="flex items-center gap-2">
-        <button className="p-2 rounded-lg text-white/30 hover:text-white/70 hover:bg-white/[0.05] transition-all relative">
-          <Bell className="w-4 h-4" />
-          <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-violet-500" />
-        </button>
-      </div>
     </header>
   )
 }

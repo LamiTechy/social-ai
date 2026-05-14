@@ -49,7 +49,7 @@ export default function SignupPage() {
             <Sparkles className="w-6 h-6 text-white" />
           </div>
           <h1 className="text-xl font-bold text-white">Start for free</h1>
-          <p className="text-sm text-white/40 mt-1">10 free credits, no card required</p>
+          <p className="text-sm text-white/40 mt-1">No credit card required</p>
         </div>
 
         <div className="bg-white/[0.04] border border-white/10 rounded-2xl p-6">

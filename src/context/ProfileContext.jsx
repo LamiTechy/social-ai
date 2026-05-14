@@ -13,7 +13,7 @@ export function ProfileProvider({ children }) {
     if (!user) return
     const { data, error } = await supabase
       .from('profiles')
-      .select('id, email, full_name, business_name, credits, credits_used, plan, subscription_status')
+      .select('id, email, full_name, business_name, plan, subscription_status')
       .eq('id', user.id)
       .single()
     if (error) { console.error('Profile fetch error:', error.message); return }

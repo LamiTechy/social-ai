@@ -7,6 +7,7 @@ const PLATFORM_INSTRUCTIONS = {
   twitter:   'Write a punchy tweet under 280 characters. Hook in the first line. Use 1-2 hashtags.',
   linkedin:  'Write a professional LinkedIn post (150-300 words). Short paragraphs. End with a question or CTA. 3-5 hashtags at the end.',
   instagram: 'Write an engaging Instagram caption with emojis throughout. Clear CTA (DM us, link in bio). 5-8 hashtags at the end.',
+  tiktok:    'Write a TikTok caption up to 2200 characters. Keep it conversational and hook the audience quickly. Include relevant hashtags and a strong CTA.',
 }
 
 const TONE_GUIDE = {
@@ -20,7 +21,6 @@ const TONE_GUIDE = {
 export async function generateContent({ topic, tone, platforms }) {
   const groqKey = import.meta.env.VITE_GROQ_API_KEY
 
-  // ── If Groq key is available, call Groq directly ──────────
   if (groqKey) {
     const platformSections = platforms
       .map(p => `### ${p.toUpperCase()}\n${PLATFORM_INSTRUCTIONS[p] ?? 'Write an engaging social media post.'}`)
